@@ -6,7 +6,7 @@ import android.util.Log;
 
 import java.util.Random;
 
-import ru.yakovenko.gameone.GameView;
+import ru.yakovenko.gameone.view.GameView;
 
 public class Enemy {
     private static final String TAG = Enemy.class.getName();
@@ -19,7 +19,7 @@ public class Enemy {
     private GameView mGameView;
     private Bitmap mBitmap;
 
-    public Enemy(GameView gameView, Bitmap bitmap) {
+    public Enemy(GameView gameView, Bitmap bitmap, int speed) {
         this.mGameView = gameView;
         this.mBitmap = bitmap;
 
@@ -28,7 +28,7 @@ public class Enemy {
         this.mHeight = bitmap.getHeight();
         this.mX = gameView.getWidth();
         this.mY = random.nextInt(gameView.getHeight() - mHeight);
-        this.mSpeed = random.nextInt(10);
+        this.mSpeed = speed / 2 + random.nextInt(speed);
 
         Log.d(TAG, String.format("Create Enemy: mX = %s, xY = %s, mSpeed = %s", mX, mY, mSpeed));
     }

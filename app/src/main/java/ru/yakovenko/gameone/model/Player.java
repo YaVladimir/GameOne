@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.util.Log;
 
-import ru.yakovenko.gameone.GameView;
+import ru.yakovenko.gameone.view.GameView;
 
 public class Player {
     private static final String TAG = Player.class.getName();

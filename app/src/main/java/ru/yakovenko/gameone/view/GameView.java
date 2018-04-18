@@ -1,4 +1,4 @@
-package ru.yakovenko.gameone;
+package ru.yakovenko.gameone.view;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,17 +10,22 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Toast;
 
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import ru.yakovenko.gameone.R;
 import ru.yakovenko.gameone.model.Bullet;
+import ru.yakovenko.gameone.model.Counter;
 import ru.yakovenko.gameone.model.Enemy;
+import ru.yakovenko.gameone.utils.Utils;
 
 public class GameView extends SurfaceView implements Runnable {
     private static final String TAG = GameView.class.getName();
     public int shotX;
     public int shotY;
+    private int mSpeed;
     private GameThread mThread;
     private boolean mRunning = false;
     private CopyOnWriteArrayList<Bullet> mBullets = new CopyOnWriteArrayList<>();
@@ -28,14 +33,19 @@ public class GameView extends SurfaceView implements Runnable {
     private Bitmap mNinjaBmp;
     private Bitmap mEnemyBmp;
     private Thread thread = new Thread(this);
+    private boolean mIsRunning;
+    private Counter mCounter;
 
-    public GameView(Context context) {
+    public GameView(Context context, int speed, int health) {
         super(context);
+        this.mSpeed = speed;
         this.mThread = new GameThread(this);
+        this.mCounter = new Counter(0, health);
         getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
                 mThread.setRunning(true);
+                mIsRunning = true;
                 mThread.start();
                 thread.start();
             }
@@ -48,6 +58,7 @@ public class GameView extends SurfaceView implements Runnable {
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
                 mThread.setRunning(false);
+                mIsRunning = false;
                 boolean retry = true;
                 while (retry) {
                     try {
@@ -67,8 +78,8 @@ public class GameView extends SurfaceView implements Runnable {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(Color.WHITE);
+        mCounter.onDraw(canvas);
         canvas.drawBitmap(mNinjaBmp, 5, canvas.getHeight() / 2, null);
-
         for (Bullet bullet : mBullets) {
             if (bullet.getmX() <= canvas.getWidth()) {
                 bullet.onDraw(canvas);
@@ -82,6 +93,7 @@ public class GameView extends SurfaceView implements Runnable {
             if (enemy.getmX() >= 0) {
                 enemy.onDraw(canvas);
             } else {
+                mCounter.decrementHealth();
                 boolean remove = mEnemies.remove(enemy);
                 Log.d(TAG, String.format("Remove enemy %s - %s", enemy, remove));
             }
@@ -106,11 +118,13 @@ public class GameView extends SurfaceView implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (mIsRunning) {
             Random random = new Random();
             try {
-                Thread.sleep(random.nextInt(2000));
-                mEnemies.add(new Enemy(this, mEnemyBmp));
+                if (!thread.isInterrupted()) {
+                    Thread.sleep(random.nextInt(2000));
+                    mEnemies.add(new Enemy(this, mEnemyBmp, mSpeed));
+                }
             } catch (InterruptedException e) {
                 Log.e(TAG, "Couldn't sleep thread", e);
             }
@@ -123,9 +137,29 @@ public class GameView extends SurfaceView implements Runnable {
                 if (Utils.isCollision(bullet, enemy)) {
                     mEnemies.remove(enemy);
                     mBullets.remove(bullet);
+                    mCounter.incrementKills();
                 }
             }
         }
+    }
+
+    /**
+     * Проверяет количество оставшихся жизней, если их количество <= 0,
+     * прекращает отрисовывать Canvas
+     */
+    private void checkHealth() {
+        if (mCounter.getmHealth() <= 0) {
+            mThread.setRunning(false);
+            mIsRunning = false;
+            finish();
+        }
+    }
+
+    private void finish() {
+        Toast.makeText(getContext(),
+                "Ты проиграл, лошара. Твой финальный счет: " + mCounter.getmKills(),
+                Toast.LENGTH_LONG).show();
+        forceLayout();
     }
 
     private class GameThread extends Thread {
@@ -144,14 +178,18 @@ public class GameView extends SurfaceView implements Runnable {
         @SuppressLint("WrongCall")
         @Override
         public void run() {
-            while (mRunning) {
+            while (mRunning && !thread.isInterrupted() && !mThread.isInterrupted()) {
                 canvas = gameView.getHolder().lockCanvas();
-                synchronized (gameView.getHolder()) {
-                    gameView.onDraw(canvas);
-                    checkCollision();
+                if (canvas != null) {
+                    synchronized (gameView.getHolder()) {
+                        gameView.onDraw(canvas);
+                        checkCollision();
+                        checkHealth();
+                    }
+                    gameView.getHolder().unlockCanvasAndPost(canvas);
                 }
-                gameView.getHolder().unlockCanvasAndPost(canvas);
             }
         }
     }
+
 }

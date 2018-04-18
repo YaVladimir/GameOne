@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">GameOne</string>
     <string name="action_settings">Settings</string>
+    <string name="new_game">Начать игру</string>
+    <string name="radio_group">Уровень сложности</string>
+    <string name="radio_button1">Легкий</string>
+    <string name="radio_button2">Сложный</string>
 </resources>
