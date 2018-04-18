@@ -1,7 +1,9 @@
-package ru.yakovenko.gameone;
+package ru.yakovenko.gameone.model;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+
+import ru.yakovenko.gameone.GameView;
 
 public class Bullet {
     private Bitmap mBitmap;
@@ -19,11 +21,11 @@ public class Bullet {
         this.mGameView = gameView;
         this.mBitmap = bitmap;
 
-        this.mX = 0;
-        this.mY = 120;
+        this.mX = 5;
+        this.mY = gameView.getHeight() / 2;
 
-        this.mWidth = 27;
-        this.mHeight = 40;
+        this.mWidth = bitmap.getWidth();
+        this.mHeight = bitmap.getHeight();
         this.mSpeed = 25;
 
         mAngle = Math.atan((double) (mY - gameView.shotY) / (mX - gameView.shotX));
@@ -53,5 +55,21 @@ public class Bullet {
 
     public void setmY(int mY) {
         this.mY = mY;
+    }
+
+    public int getmSpeed() {
+        return mSpeed;
+    }
+
+    public int getmWidth() {
+        return mWidth;
+    }
+
+    public int getmHeight() {
+        return mHeight;
+    }
+
+    public double getmAngle() {
+        return mAngle;
     }
 }

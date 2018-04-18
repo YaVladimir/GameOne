@@ -11,18 +11,23 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import java.util.ListIterator;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class GameView extends SurfaceView {
+import ru.yakovenko.gameone.model.Bullet;
+import ru.yakovenko.gameone.model.Enemy;
+
+public class GameView extends SurfaceView implements Runnable {
     private static final String TAG = GameView.class.getName();
     public int shotX;
     public int shotY;
     private GameThread mThread;
     private boolean mRunning = false;
     private CopyOnWriteArrayList<Bullet> mBullets = new CopyOnWriteArrayList<>();
-    private Player mPlayer;
+    private CopyOnWriteArrayList<Enemy> mEnemies = new CopyOnWriteArrayList<>();
     private Bitmap mNinjaBmp;
+    private Bitmap mEnemyBmp;
+    private Thread thread = new Thread(this);
 
     public GameView(Context context) {
         super(context);
@@ -32,6 +37,7 @@ public class GameView extends SurfaceView {
             public void surfaceCreated(SurfaceHolder holder) {
                 mThread.setRunning(true);
                 mThread.start();
+                thread.start();
             }
 
             @Override
@@ -46,6 +52,7 @@ public class GameView extends SurfaceView {
                 while (retry) {
                     try {
                         mThread.join();
+                        thread.join();
                         retry = false;
                     } catch (InterruptedException e) {
                         Log.e(TAG, "Couldn't join thread: {}", e);
@@ -54,23 +61,31 @@ public class GameView extends SurfaceView {
             }
         });
         mNinjaBmp = BitmapFactory.decodeResource(getResources(), R.drawable.nindja);
-        mPlayer = new Player(this, mNinjaBmp);
+        mEnemyBmp = BitmapFactory.decodeResource(getResources(), R.drawable.ghost);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(Color.WHITE);
+        canvas.drawBitmap(mNinjaBmp, 5, canvas.getHeight() / 2, null);
 
-        ListIterator<Bullet> listIterator = mBullets.listIterator();
-        while (listIterator.hasNext()) {
-            Bullet bullet = listIterator.next();
+        for (Bullet bullet : mBullets) {
             if (bullet.getmX() <= canvas.getWidth()) {
                 bullet.onDraw(canvas);
             } else {
-                mBullets.remove(bullet);
+                boolean remove = mBullets.remove(bullet);
+                Log.d(TAG, String.format("Remove bullet %s - %s", bullet, remove));
             }
         }
-        canvas.drawBitmap(mNinjaBmp, 5, 120, null);
+
+        for (Enemy enemy : mEnemies) {
+            if (enemy.getmX() >= 0) {
+                enemy.onDraw(canvas);
+            } else {
+                boolean remove = mEnemies.remove(enemy);
+                Log.d(TAG, String.format("Remove enemy %s - %s", enemy, remove));
+            }
+        }
     }
 
     private Bullet createSprite(int resource) {
@@ -83,10 +98,34 @@ public class GameView extends SurfaceView {
         shotX = (int) event.getX();
         shotY = (int) event.getY();
 
-        //if (MotionEvent.ACTION_DOWN == event.getAction()) {
-        mBullets.add(createSprite(R.drawable.ammo));
-        //}
+        if (MotionEvent.ACTION_DOWN == event.getAction()) {
+            mBullets.add(createSprite(R.drawable.ammo));
+        }
         return true;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            Random random = new Random();
+            try {
+                Thread.sleep(random.nextInt(2000));
+                mEnemies.add(new Enemy(this, mEnemyBmp));
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Couldn't sleep thread", e);
+            }
+        }
+    }
+
+    private void checkCollision() {
+        for (Bullet bullet : mBullets) {
+            for (Enemy enemy : mEnemies) {
+                if (Utils.isCollision(bullet, enemy)) {
+                    mEnemies.remove(enemy);
+                    mBullets.remove(bullet);
+                }
+            }
+        }
     }
 
     private class GameThread extends Thread {
@@ -94,7 +133,7 @@ public class GameView extends SurfaceView {
 
         private Canvas canvas;
 
-        public GameThread(GameView gameView) {
+        GameThread(GameView gameView) {
             this.gameView = gameView;
         }
 
@@ -109,10 +148,10 @@ public class GameView extends SurfaceView {
                 canvas = gameView.getHolder().lockCanvas();
                 synchronized (gameView.getHolder()) {
                     gameView.onDraw(canvas);
+                    checkCollision();
                 }
                 gameView.getHolder().unlockCanvasAndPost(canvas);
             }
         }
-
     }
 }
