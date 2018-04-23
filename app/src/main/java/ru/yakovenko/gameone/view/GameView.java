@@ -164,7 +164,6 @@ public class GameView extends SurfaceView implements Runnable {
 
     private class GameThread extends Thread {
         private GameView gameView;
-
         private Canvas canvas;
 
         GameThread(GameView gameView) {
