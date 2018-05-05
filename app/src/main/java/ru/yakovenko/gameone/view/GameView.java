@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.Toast;
 
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -131,6 +130,33 @@ public class GameView extends SurfaceView implements Runnable {
         }
     }
 
+    public void pause() {
+        mIsRunning = false;
+        mRunning = false;
+        Log.v(TAG, "pause");
+        while (true) {
+            try {
+                thread.join();
+                mThread.join();
+            } catch (InterruptedException e) {
+                Log.v("pause()", e.toString());
+            }
+        }
+    }
+
+    public void resume() {
+        mIsRunning = true;
+        mRunning = true;
+
+        if (thread == null && mThread == null) {
+            thread = new Thread(this);
+            this.mThread = new GameThread(this);
+            Log.v("resume()", "new thread started");
+        } else {
+            Log.v("resume()", "new thread not started as t!=null");
+        }
+    }
+
     private void checkCollision() {
         for (Bullet bullet : mBullets) {
             for (Enemy enemy : mEnemies) {
@@ -156,9 +182,26 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     private void finish() {
-        Toast.makeText(getContext(),
+        /*final Context context = this.getContext();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(context.getText(R.string.lose_dialog_title));
+        View view = inflate(context, R.layout.finish, null);
+        builder.setView(view);
+        final Button btnFinish = view.findViewById(R.id.btnFinish);
+        btnFinish.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (v.getId() == btnFinish.getId()) {
+                    ((Activity) context).finish();
+                }
+            }
+        });
+        AlertDialog finishDialog = builder.create();
+        finishDialog.show();*/
+        /*Toast.makeText(context,
                 "Ты проиграл, лошара. Твой финальный счет: " + mCounter.getmKills(),
-                Toast.LENGTH_LONG).show();
+                Toast.LENGTH_LONG).show();*/
         forceLayout();
     }
 

@@ -5,4 +5,6 @@
     <string name="radio_group">Уровень сложности</string>
     <string name="radio_button1">Легкий</string>
     <string name="radio_button2">Сложный</string>
+    <string name="lose_dialog_title">Ты проиграл, смертный</string>
+    <string name="finish_button">Закончить игру</string>
 </resources>
